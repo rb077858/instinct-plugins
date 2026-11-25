@@ -8,7 +8,7 @@ Lets a user make a form by chatting with their assistant, send people a link to 
 - Ability to open a public web link or run a script to fetch it, and to message the user in the chat they use.
 - A place to keep one small private file per form (the "secret file"). It holds the key that decrypts answers. Never put it in a repository, a message, or a shared folder.
 
-Raw files: `https://raw.githubusercontent.com/rb077858/instinct-plugins/main/form-creator/form-tool.mjs`. The answer page lives at `https://rb077858.github.io/instinct-plugins/form-creator/form.html`.
+Raw files: `https://raw.githubusercontent.com/rb077858/instinct-plugins/main/form-creator/form-tool.mjs`. The answer page lives at `https://reembir.com/instinct-plugins/form-creator/form.html`.
 
 ## How it works
 
