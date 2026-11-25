@@ -9,6 +9,11 @@ Each plugin lives in its own folder, with a README.md that holds the full instru
 | Plugin | What it does | Guide |
 | --- | --- | --- |
 | whatsapp | Links a user's WhatsApp with a phone-number code and reads chats on request | [whatsapp/README.md](whatsapp/README.md) |
+| form-creator | Make a form by chatting, share a link, read the answers in the chat | [form-creator/README.md](form-creator/README.md) |
+
+## Browse the catalog
+
+A machine-readable list of all plugins is in [index.json](index.json). To let an assistant browse it and show you what exists, see [browse/README.md](browse/README.md). Browsing only reads; nothing is installed without your approval.
 
 ## Announcements
 
