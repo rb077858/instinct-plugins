@@ -5,7 +5,7 @@ import { webcrypto as crypto } from "node:crypto";
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 import fs from "node:fs";
 
-const DEFAULT_BASE = "https://rb077858.github.io/instinct-plugins/form-creator";
+const DEFAULT_BASE = "https://reembir.com/instinct-plugins/form-creator";
 const NTFY = "https://ntfy.sh";
 const b64u = (u) => Buffer.from(u).toString("base64url");
 const unb64u = (s) => new Uint8Array(Buffer.from(s, "base64url"));
