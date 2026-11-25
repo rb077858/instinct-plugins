@@ -67,6 +67,25 @@ function frag(url) {
   if (i >= 0) url.slice(i + 1).split("&").forEach((kv) => { const j = kv.indexOf("="); if (j > 0) p[kv.slice(0, j)] = kv.slice(j + 1); });
   return p;
 }
+// Link shortener: is.gd (free, no signup). It sees the whole link it is given, fragment included.
+// Never shorten a viewUrl (it holds the private key). The result is verified; on any failure we return null.
+async function shorten(url) {
+  try {
+    const r = await fetch("https://is.gd/create.php?format=simple&url=" + encodeURIComponent(url), { signal: AbortSignal.timeout(15000) });
+    const short = (await r.text()).trim();
+    if (!r.ok || !/^https:\/\/is\.gd\/[A-Za-z0-9_]+$/.test(short)) return null;
+    const h = await fetch(short, { redirect: "manual", signal: AbortSignal.timeout(15000) });
+    return h.headers.get("location") === url ? short : null;
+  } catch { return null; }
+}
+async function resolveUrl(url) {
+  if (!/^https:\/\/is\.gd\/[A-Za-z0-9_]+$/.test(url)) return url;
+  const h = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(15000) });
+  const loc = h.headers.get("location");
+  if (!loc) die("short link did not resolve");
+  return loc;
+}
+
 function readJson(f) { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (e) { die(`cannot read JSON file ${f}: ${e.message}`); } }
 function arg(name, def) { const i = process.argv.indexOf("--" + name); return i > 0 ? process.argv[i + 1] : def; }
 
@@ -83,24 +102,29 @@ async function cmdCreate(specFile) {
   const answerUrl = `${base}/form.html#d=${d}`;
   const secret = { fid, topic, jwk, title: spec.title, base, created: new Date().toISOString() };
   fs.writeFileSync(out, JSON.stringify(secret, null, 2), { mode: 0o600 });
+  const shortAnswerUrl = process.argv.includes("--no-short") ? null : await shorten(answerUrl);
   const viewUrl = `${base}/view.html#t=${topic}&k=${b64u(Buffer.from(JSON.stringify(jwk)))}&d=${d}`;
-  console.log(JSON.stringify({ answerUrl, viewUrl, secretFile: out, answerUrlLength: answerUrl.length, note: "Keep the secret file private (never in a repo). The view link contains the private key: share it only with the form owner." }, null, 2));
+  console.log(JSON.stringify({ shareUrl: shortAnswerUrl || answerUrl, shortAnswerUrl, answerUrl, viewUrl, secretFile: out, answerUrlLength: answerUrl.length, note: "Send shareUrl to people (short link; falls back to the long answerUrl if shortening failed). Keep the secret file private (never in a repo). The view link contains the private key: share it only with the form owner." }, null, 2));
   if (answerUrl.length > 3000) console.error("Warning: the answer link is long (" + answerUrl.length + " chars). Shorten texts or options so the WhatsApp button keeps working.");
 }
 
 function decode(url) { const p = frag(url); if (!p.d) die("no #d= part in the URL"); return unpack(p.d); }
-function cmdDecode(url) { const s = decode(url); delete s.pk; delete s.topic; console.log(JSON.stringify(s, null, 2)); }
+async function cmdDecode(url) { const s = decode(await resolveUrl(url)); delete s.pk; delete s.topic; console.log(JSON.stringify(s, null, 2)); }
 
-function cmdPrefill(url, answersFile) {
+async function cmdPrefill(url, answersFile) {
+  url = await resolveUrl(url);
   const s = decode(url);
   const a = readJson(answersFile);
   const clean = {};
   for (const q of s.questions) if (a[q.id] !== undefined && q.type !== "info") clean[q.id] = a[q.id];
   const base = url.split("#")[0];
-  console.log(`${base}#d=${frag(url).d}&r=${pack(clean)}`);
+  const long = `${base}#d=${frag(url).d}&r=${pack(clean)}`;
+  // Answers are personal: shorten only when asked (--short), because the shortener sees the link.
+  console.log((process.argv.includes("--short") && (await shorten(long))) || long);
 }
 
 async function cmdSubmit(url, answersFile) {
+  url = await resolveUrl(url);
   const s = decode(url);
   const a = readJson(answersFile);
   const msg = await encryptTo(s.pk, { f: s.fid || "", t: Date.now(), a, via: "assistant" });
@@ -144,7 +168,7 @@ async function cmdResponses(secretFile) {
 
 async function cmdSummary(secretFile) {
   const { sec, st } = await sync(secretFile);
-  const url = arg("form"); const s = url ? decode(url) : null;
+  const url = arg("form"); const s = url ? decode(await resolveUrl(url)) : null;
   const names = {}; if (s) s.questions.forEach((q) => (names[q.id] = q.text));
   const lines = [`${sec.title}: ${st.responses.length} response(s)`];
   st.responses.forEach((r, i) => { lines.push(`\n#${i + 1} (${r.receivedAt})`); for (const [k, v] of Object.entries(r.answers)) lines.push(`- ${names[k] || k}: ${Array.isArray(v) ? v.join(", ") : v}`); });
@@ -153,16 +177,16 @@ async function cmdSummary(secretFile) {
 
 const [cmd, a1, a2] = process.argv.slice(2);
 const HELP = `form-tool.mjs
-  create <spec.json> [--base URL] [--secret-out FILE]   make a form: prints answerUrl, viewUrl, writes a private secret file
+  create <spec.json> [--base URL] [--secret-out FILE] [--no-short]   make a form: prints shareUrl (short is.gd link, long fallback), answerUrl, viewUrl, writes a private secret file
   decode <answerUrl>                                     print the form (questions) from a link
-  prefill <answerUrl> <answers.json>                     link with answers prefilled; the visitor presses Submit
+  prefill <answerUrl> <answers.json> [--short]                  link with answers prefilled; the visitor presses Submit
   submit <answerUrl> <answers.json>                      send answers directly (ONLY after the visitor approved them)
   responses <secretFile> [--state FILE] [--all]          fetch, decrypt and archive new responses (JSON)
   summary <secretFile> [--form answerUrl]                text summary of archived responses, handy for WhatsApp`;
 try {
   if (cmd === "create") await cmdCreate(a1);
-  else if (cmd === "decode") cmdDecode(a1);
-  else if (cmd === "prefill") cmdPrefill(a1, a2);
+  else if (cmd === "decode") await cmdDecode(a1);
+  else if (cmd === "prefill") await cmdPrefill(a1, a2);
   else if (cmd === "submit") await cmdSubmit(a1, a2);
   else if (cmd === "responses") await cmdResponses(a1);
   else if (cmd === "summary") await cmdSummary(a1);
