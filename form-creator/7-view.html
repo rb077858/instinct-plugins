@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src https: data:; connect-src https://ntfy.sh; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#4f46e5">
+<title>Responses</title>
+<style>
+:root{--ink:#161a2e;--mute:#667085;--line:#e4e7f2;--bg:#f3f4fb;--brand:#4f46e5;--brand2:#7c3aed}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.hero{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;padding:18px 16px 60px}
+.wrap{max-width:720px;margin:0 auto}
+.badge{font-size:12px;opacity:.9;margin-bottom:12px}
+h1{margin:0 0 4px;font-size:26px;overflow-wrap:anywhere}
+main{max-width:720px;margin:-40px auto 0;padding:0 14px 40px}
+.card{background:#fff;border-radius:18px;padding:18px;margin:0 0 14px;box-shadow:0 1px 2px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+.tabs{display:flex;gap:8px;margin:0 0 14px}
+.tab{flex:1;border:0;border-radius:12px;padding:12px;font:600 15px inherit;background:#fff;color:var(--ink);cursor:pointer}
+.tab.on{background:var(--brand);color:#fff}
+.q{font-weight:650;margin:0 0 8px;overflow-wrap:anywhere}
+.bar{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:14px}
+.bar i{display:block;height:10px;border-radius:6px;background:linear-gradient(90deg,var(--brand),var(--brand2));min-width:3px}
+.bar .l{flex:0 0 38%;overflow-wrap:anywhere}.bar .t{flex:1}.bar .n{flex:none;color:var(--mute);width:28px;text-align:right}
+.ans{background:#f7f8ff;border-radius:10px;padding:8px 10px;margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+.meta{color:var(--mute);font-size:13px;margin:0 0 8px}
+.k{color:var(--mute);font-size:13px;margin:10px 0 2px}
+button.act{border:0;border-radius:12px;padding:12px 16px;font:600 15px inherit;background:#eef0f8;cursor:pointer}
+.empty{text-align:center;color:var(--mute);padding:26px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="hero"><div class="wrap"><div class="badge">Created by Instinct via instinct-plugins</div><h1 id="title">Responses</h1><div id="count" class="badge"></div></div></div>
+<main>
+<div class="tabs"><button class="tab on" id="t1">Summary</button><button class="tab" id="t2">Each response</button></div>
+<div id="v1"></div><div id="v2" class="hide"></div>
+<div class="card"><button class="act" id="csv">Download CSV</button><p class="meta" style="margin:10px 0 0">Responses are decrypted in this browser with the key in the link. Keep this link private. The relay keeps messages for about 12 hours, so save the CSV if you need a copy.</p></div>
+</main>
+<script>
+"use strict";
+function b64uToBytes(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+async function pipe(bytes,stream){var r=new Blob([bytes]).stream().pipeThrough(stream);return new Uint8Array(await new Response(r).arrayBuffer())}
+function h(t,a){var e=document.createElement(t);if(a)for(var k in a){if(k==="class")e.className=a[k];else e.setAttribute(k,a[k])}for(var i=2;i<arguments.length;i++){var c=arguments[i];if(c==null)continue;e.appendChild(typeof c==="string"?document.createTextNode(c):c)}return e}
+var P={};(location.hash||"").replace(/^#/,"").split("&").forEach(function(kv){var i=kv.indexOf("=");if(i>0)P[kv.slice(0,i)]=kv.slice(i+1)});
+var spec=null,rows=[];
+function msg(t){document.getElementById("v1").appendChild(h("div",{"class":"card empty"},t))}
+async function decrypt(jwk,text){
+  var m=JSON.parse(text);
+  var priv=await crypto.subtle.importKey("jwk",jwk,{name:"ECDH",namedCurve:"P-256"},false,["deriveKey"]);
+  var pub=await crypto.subtle.importKey("raw",b64uToBytes(m.e),{name:"ECDH",namedCurve:"P-256"},false,[]);
+  var key=await crypto.subtle.deriveKey({name:"ECDH",public:pub},priv,{name:"AES-GCM",length:256},false,["decrypt"]);
+  var pt=new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:b64uToBytes(m.n)},key,b64uToBytes(m.c)));
+  return JSON.parse(new TextDecoder().decode(await pipe(pt,new DecompressionStream("deflate-raw"))));
+}
+function fmt(v){return Array.isArray(v)?v.join(", "):String(v==null?"":v)}
+async function main(){
+  if(!P.t||!P.k||!P.d){msg("This responses link is incomplete.");return}
+  var jwk=JSON.parse(new TextDecoder().decode(b64uToBytes(P.k)));
+  spec=JSON.parse(new TextDecoder().decode(await pipe(b64uToBytes(P.d),new DecompressionStream("deflate-raw"))));
+  document.getElementById("title").textContent=spec.title||"Responses";
+  var r=await fetch("https://ntfy.sh/"+encodeURIComponent(P.t)+"/json?poll=1&since=all");
+  if(!r.ok)throw new Error("Could not load responses (error "+r.status+").");
+  var lines=(await r.text()).split("\n").filter(Boolean);
+  for(var i=0;i<lines.length;i++){var m=JSON.parse(lines[i]);if(m.event!=="message")continue;try{var p=await decrypt(jwk,m.message);if(p.f===spec.fid)rows.push({time:m.time*1000,a:p.a||{},via:p.via})}catch(e){}}
+  rows.sort(function(a,b){return a.time-b.time});
+  document.getElementById("count").textContent=rows.length+" response"+(rows.length===1?"":"s")+" still on the relay";
+  draw();
+}
+function draw(){
+  var v1=document.getElementById("v1"),v2=document.getElementById("v2");v1.textContent="";v2.textContent="";
+  if(!rows.length){v1.appendChild(h("div",{"class":"card empty"},"No responses yet."));return}
+  spec.questions.forEach(function(q){
+    if(q.type==="info")return;
+    var card=h("div",{"class":"card"},h("p",{"class":"q"},q.text));
+    var vals=rows.map(function(r){return r.a[q.id]}).filter(function(v){return v!=null&&v!==""&&!(Array.isArray(v)&&!v.length)});
+    if(["single","multi","dropdown","scale","rating","yesno"].indexOf(q.type)>=0){
+      var cnt={},order=[];
+      if(q.options)q.options.forEach(function(o){var l=typeof o==="string"?o:o.label;cnt[l]=0;order.push(l)});
+      vals.forEach(function(v){(Array.isArray(v)?v:[v]).forEach(function(x){x=String(x);if(!(x in cnt)){cnt[x]=0;order.push(x)}cnt[x]++})});
+      if(!q.options)order.sort();
+      var mx=Math.max.apply(null,order.map(function(k){return cnt[k]}).concat([1]));
+      order.forEach(function(k){var i=h("i");i.style.width=(cnt[k]/mx*100)+"%";card.appendChild(h("div",{"class":"bar"},h("span",{"class":"l"},k),h("span",{"class":"t"},i),h("span",{"class":"n"},String(cnt[k]))))});
+    }else{
+      if(!vals.length)card.appendChild(h("p",{"class":"meta"},"No answers."));
+      vals.forEach(function(v){card.appendChild(h("div",{"class":"ans"},fmt(v)))});
+    }
+    v1.appendChild(card);
+  });
+  rows.forEach(function(r,i){
+    var card=h("div",{"class":"card"},h("p",{"class":"meta"},"#"+(i+1)+" \u00b7 "+new Date(r.time).toLocaleString()));
+    spec.questions.forEach(function(q){if(q.type==="info")return;var v=r.a[q.id];card.appendChild(h("p",{"class":"k"},q.text));card.appendChild(h("div",{"class":"ans"},fmt(v)||"-"))});
+    v2.appendChild(card);
+  });
+}
+function csvCell(s){s=String(s);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'}
+document.getElementById("csv").addEventListener("click",function(){
+  if(!spec)return;var qs=spec.questions.filter(function(q){return q.type!=="info"});
+  var out=[["Time"].concat(qs.map(function(q){return q.text}))];
+  rows.forEach(function(r){out.push([new Date(r.time).toISOString()].concat(qs.map(function(q){return fmt(r.a[q.id])})))});
+  var blob=new Blob([out.map(function(l){return l.map(csvCell).join(",")}).join("\n")],{type:"text/csv"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="responses.csv";a.click();
+});
+function tab(n){document.getElementById("v1").classList.toggle("hide",n!==1);document.getElementById("v2").classList.toggle("hide",n!==2);document.getElementById("t1").classList.toggle("on",n===1);document.getElementById("t2").classList.toggle("on",n===2)}
+document.getElementById("t1").onclick=function(){tab(1)};document.getElementById("t2").onclick=function(){tab(2)};
+main().catch(function(e){document.getElementById("v1").textContent="";msg(e.message||"Something went wrong.")});
+</script>
+</body>
+</html>
