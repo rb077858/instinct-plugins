@@ -3,5 +3,12 @@
   "version": 1,
   "updated": "2026-11-25",
   "window_days": 7,
-  "messages": []
+  "messages": [
+    {
+      "id": "2026-11-25-form-short-links",
+      "date": "2026-11-25",
+      "title": "Form creator: much shorter links",
+      "text": "The form-creator plugin was updated. Form links are now shortened automatically with a free link shortener (is.gd), so they are much easier to share. If shortening is unavailable, the full link is used instead."
+    }
+  ]
 }
