@@ -1,0 +1,18 @@
+{
+  "title": "Weekend trip vote",
+  "description": "Help us pick where to go. Takes one minute.",
+  "cover": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=60",
+  "questions": [
+    {"id":"name","type":"short","text":"Your name","required":true},
+    {"id":"dest","type":"single","text":"Where should we go?","required":true,"options":[
+      {"label":"Beach","image":"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&q=60"},
+      {"label":"Mountains","image":"https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=200&q=60"},
+      {"label":"City break"}]},
+    {"id":"extras","type":"multi","text":"What would you like to do?","help":"Pick as many as you like.","options":["Hiking","Food tour","Museums","Just relax"]},
+    {"id":"budget","type":"dropdown","text":"Your budget per person","options":["Under $200","$200 to $400","Over $400"]},
+    {"id":"excite","type":"scale","text":"How excited are you?","min":1,"max":5,"minLabel":"Meh","maxLabel":"Very"},
+    {"id":"rate","type":"rating","text":"Rate our last trip"},
+    {"id":"email","type":"email","text":"Email for updates (optional)"},
+    {"id":"idea","type":"long","text":"Any ideas or requests?"}
+  ]
+}
