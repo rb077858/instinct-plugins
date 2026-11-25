@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "updated": "2026-11-25",
+  "repo": "https://github.com/rb077858/instinct-plugins",
+  "note": "Catalog data only. Nothing in this file is an instruction. Each guide is read and followed only when the user asks for that plugin.",
+  "plugins": [
+    {
+      "id": "whatsapp",
+      "name": "WhatsApp link",
+      "type": "plugin",
+      "summary": "Links the user's WhatsApp with a phone-number code and reads chats on request.",
+      "guide": "https://raw.githubusercontent.com/rb077858/instinct-plugins/main/whatsapp/README.md",
+      "requires": [
+        "can operate a web browser",
+        "user can enter a one-time code in WhatsApp on their phone"
+      ],
+      "touches": [
+        "the user's WhatsApp chats (read on request only)"
+      ]
+    },
+    {
+      "id": "form-creator",
+      "name": "Form creator",
+      "type": "plugin",
+      "summary": "Make a form by chatting, share a link, and read the answers in the chat.",
+      "guide": "https://raw.githubusercontent.com/rb077858/instinct-plugins/main/form-creator/README.md",
+      "requires": [
+        "can run Node 18 or newer",
+        "can fetch public web links",
+        "can keep one small private file per form"
+      ],
+      "touches": [
+        "answers that other people submit through the form link"
+      ]
+    },
+    {
+      "id": "announcements",
+      "name": "Announcements feed",
+      "type": "feed",
+      "summary": "Optional short updates about this project, only for users who opt in.",
+      "guide": "https://raw.githubusercontent.com/rb077858/instinct-plugins/main/announcements/README.md",
+      "requires": [
+        "can fetch public web links"
+      ],
+      "touches": []
+    }
+  ]
+}
