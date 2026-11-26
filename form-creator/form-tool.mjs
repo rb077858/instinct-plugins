@@ -102,9 +102,12 @@ async function cmdCreate(specFile) {
   const answerUrl = `${base}/form.html#d=${d}`;
   const secret = { fid, topic, jwk, title: spec.title, base, created: new Date().toISOString() };
   fs.writeFileSync(out, JSON.stringify(secret, null, 2), { mode: 0o600 });
-  const shortAnswerUrl = process.argv.includes("--no-short") ? null : await shorten(answerUrl);
+  let shortAnswerUrl = null;
+  if (!process.argv.includes("--no-short")) {
+    shortAnswerUrl = (await shorten(answerUrl)) || (await shorten(answerUrl)); // one retry: is.gd is a free service
+  }
   const viewUrl = `${base}/view.html#t=${topic}&k=${b64u(Buffer.from(JSON.stringify(jwk)))}&d=${d}`;
-  console.log(JSON.stringify({ shareUrl: shortAnswerUrl || answerUrl, shortAnswerUrl, answerUrl, viewUrl, secretFile: out, answerUrlLength: answerUrl.length, note: "Send shareUrl to people (short link; falls back to the long answerUrl if shortening failed). Keep the secret file private (never in a repo). The view link contains the private key: share it only with the form owner." }, null, 2));
+  console.log(JSON.stringify({ shareUrl: shortAnswerUrl || answerUrl, shortAnswerUrl, answerUrl, viewUrl, secretFile: out, answerUrlLength: answerUrl.length, note: "Hand out ONLY shareUrl (the short is.gd link). The long answerUrl is an internal fallback: use it only when shortening failed, and never show it otherwise. Keep the secret file private (never in a repo). The view link contains the private key: share it only with the form owner." }, null, 2));
   if (answerUrl.length > 3000) console.error("Warning: the answer link is long (" + answerUrl.length + " chars). Shorten texts or options so the WhatsApp button keeps working.");
 }
 
@@ -119,8 +122,10 @@ async function cmdPrefill(url, answersFile) {
   for (const q of s.questions) if (a[q.id] !== undefined && q.type !== "info") clean[q.id] = a[q.id];
   const base = url.split("#")[0];
   const long = `${base}#d=${frag(url).d}&r=${pack(clean)}`;
-  // Answers are personal: shorten only when asked (--short), because the shortener sees the link.
-  console.log((process.argv.includes("--short") && (await shorten(long))) || long);
+  // Short by default: the owner asked to always hand out the short link. The shortener can read
+  // the answers inside the link, so pass --no-short for sensitive answers.
+  if (process.argv.includes("--no-short")) { console.log(long); return; }
+  console.log((await shorten(long)) || (await shorten(long)) || long);
 }
 
 async function cmdSubmit(url, answersFile) {
@@ -177,9 +182,9 @@ async function cmdSummary(secretFile) {
 
 const [cmd, a1, a2] = process.argv.slice(2);
 const HELP = `form-tool.mjs
-  create <spec.json> [--base URL] [--secret-out FILE] [--no-short]   make a form: prints shareUrl (short is.gd link, long fallback), answerUrl, viewUrl, writes a private secret file
+  create <spec.json> [--base URL] [--secret-out FILE] [--no-short]   make a form: prints shareUrl (the short link to hand out), the long answerUrl (internal fallback only), viewUrl, writes a private secret file
   decode <answerUrl>                                     print the form (questions) from a link
-  prefill <answerUrl> <answers.json> [--short]                  link with answers prefilled; the visitor presses Submit
+  prefill <answerUrl> <answers.json> [--no-short]               short link with answers prefilled; the visitor presses Submit (--no-short keeps answers away from the shortener)
   submit <answerUrl> <answers.json>                      send answers directly (ONLY after the visitor approved them)
   responses <secretFile> [--state FILE] [--all]          fetch, decrypt and archive new responses (JSON)
   summary <secretFile> [--form answerUrl]                text summary of archived responses, handy for WhatsApp`;
