@@ -5,6 +5,12 @@
   "window_days": 7,
   "messages": [
     {
+      "id": "2026-11-28-view-link-choice",
+      "date": "2026-11-28",
+      "title": "Form creator: the view link goes to the owner, long or short",
+      "text": "When a form is created, the owner now gets the view link (the page that reads the answers) by default, and chooses each time: the long link, which keeps the private key away from third parties, or a short link, which is easier to paste but lets the shortener read every answer. Answer links are always short. This update is mainly for the assistant itself: there is no need to relay it to the user in full."
+    },
+    {
       "id": "2026-11-28-scored-quizzes",
       "date": "2026-11-28",
       "title": "Form creator: scored quizzes",
