@@ -46,7 +46,24 @@ function b64uToBytes(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4
 async function pipe(bytes,stream){var r=new Blob([bytes]).stream().pipeThrough(stream);return new Uint8Array(await new Response(r).arrayBuffer())}
 function h(t,a){var e=document.createElement(t);if(a)for(var k in a){if(k==="class")e.className=a[k];else e.setAttribute(k,a[k])}for(var i=2;i<arguments.length;i++){var c=arguments[i];if(c==null)continue;e.appendChild(typeof c==="string"?document.createTextNode(c):c)}return e}
 var P={};(location.hash||"").replace(/^#/,"").split("&").forEach(function(kv){var i=kv.indexOf("=");if(i>0)P[kv.slice(0,i)]=kv.slice(i+1)});
-var spec=null,rows=[];
+var spec=null,rows=[],quizKey=null;
+function gradeLocal(key,answers){
+  var score=0,max=0,pending=[];
+  Object.keys(key).forEach(function(qid){
+    var e=key[qid];max+=e.p;
+    if(e.c===undefined){pending.push(qid);return}
+    var a=answers[qid];
+    if(Array.isArray(e.c)){
+      var sel=Array.isArray(a)?a:[];
+      if(e.part){
+        var right=sel.filter(function(x){return e.c.indexOf(x)>=0}).length;
+        var wrong=sel.filter(function(x){return e.c.indexOf(x)<0}).length;
+        score+=Math.max(0,right-wrong)/e.c.length*e.p;
+      }else if(sel.length===e.c.length&&sel.every(function(x){return e.c.indexOf(x)>=0}))score+=e.p;
+    }else if(typeof a==="string"&&a===e.c)score+=e.p;
+  });
+  return{score:Math.round(score*100)/100,max:max,pending:pending};
+}
 function msg(t){document.getElementById("v1").appendChild(h("div",{"class":"card empty"},t))}
 async function decrypt(jwk,text){
   var m=JSON.parse(text);
@@ -61,6 +78,13 @@ async function main(){
   if(!P.t||!P.k||!P.d){msg("This responses link is incomplete.");return}
   var jwk=JSON.parse(new TextDecoder().decode(b64uToBytes(P.k)));
   spec=JSON.parse(new TextDecoder().decode(await pipe(b64uToBytes(P.d),new DecompressionStream("deflate-raw"))));
+  if(P.qk){try{quizKey=JSON.parse(new TextDecoder().decode(await pipe(b64uToBytes(P.qk),new DecompressionStream("deflate-raw"))))}catch(e){quizKey=null}}
+  if(quizKey){
+    var tabs=document.querySelector(".tabs");
+    var t3=h("button",{"class":"tab",id:"t3"},"Scores");tabs.appendChild(t3);
+    var v3=h("div",{"class":"hide",id:"v3"});document.querySelector("main").insertBefore(v3,document.querySelector("main .card"));
+    t3.onclick=function(){tab(3)};
+  }
   document.getElementById("title").textContent=spec.title||"Responses";
   var r=await fetch("https://ntfy.sh/"+encodeURIComponent(P.t)+"/json?poll=1&since=all");
   if(!r.ok)throw new Error("Could not load responses (error "+r.status+").");
@@ -91,10 +115,22 @@ function draw(){
     v1.appendChild(card);
   });
   rows.forEach(function(r,i){
-    var card=h("div",{"class":"card"},h("p",{"class":"meta"},"#"+(i+1)+" \u00b7 "+new Date(r.time).toLocaleString()));
+    var head="#"+(i+1)+" \u00b7 "+new Date(r.time).toLocaleString();
+    if(quizKey){var g0=gradeLocal(quizKey,r.a);head+=" \u00b7 auto score "+g0.score+"/"+g0.max+(g0.pending.length?" (+"+g0.pending.length+" to grade)":"")}
+    var card=h("div",{"class":"card"},h("p",{"class":"meta"},head));
     spec.questions.forEach(function(q){if(q.type==="info")return;var v=r.a[q.id];card.appendChild(h("p",{"class":"k"},q.text));card.appendChild(h("div",{"class":"ans"},fmt(v)||"-"))});
     v2.appendChild(card);
   });
+  if(quizKey){
+    var v3=document.getElementById("v3");v3.textContent="";
+    var sc=rows.map(function(r,i){return{i:i,r:r,g:gradeLocal(quizKey,r.a)}}).sort(function(a,b){return b.g.score-a.g.score});
+    var card3=h("div",{"class":"card"},h("p",{"class":"q"},"Ranking (auto-graded)"));
+    sc.forEach(function(x,rank){
+      card3.appendChild(h("p",{"class":"meta"},(rank+1)+". "+x.g.score+"/"+x.g.max+" \u00b7 response #"+(x.i+1)+" \u00b7 "+new Date(x.r.time).toLocaleString()+(x.g.pending.length?" \u00b7 "+x.g.pending.length+" open question(s) still to grade":"")));
+    });
+    card3.appendChild(h("p",{"class":"meta"},"Manual points for open questions are added by the assistant and are not shown here."));
+    v3.appendChild(card3);
+  }
 }
 function csvCell(s){s=String(s);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'}
 document.getElementById("csv").addEventListener("click",function(){
@@ -104,7 +140,7 @@ document.getElementById("csv").addEventListener("click",function(){
   var blob=new Blob([out.map(function(l){return l.map(csvCell).join(",")}).join("\n")],{type:"text/csv"});
   var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="responses.csv";a.click();
 });
-function tab(n){document.getElementById("v1").classList.toggle("hide",n!==1);document.getElementById("v2").classList.toggle("hide",n!==2);document.getElementById("t1").classList.toggle("on",n===1);document.getElementById("t2").classList.toggle("on",n===2)}
+function tab(n){[1,2,3].forEach(function(i){var v=document.getElementById("v"+i),t=document.getElementById("t"+i);if(v)v.classList.toggle("hide",n!==i);if(t)t.classList.toggle("on",n===i)})}
 document.getElementById("t1").onclick=function(){tab(1)};document.getElementById("t2").onclick=function(){tab(2)};
 main().catch(function(e){document.getElementById("v1").textContent="";msg(e.message||"Something went wrong.")});
 </script>
