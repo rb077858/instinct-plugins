@@ -1,9 +1,15 @@
 {
   "feed": "instinct-plugins announcements",
   "version": 1,
-  "updated": "2026-11-25",
+  "updated": "2026-11-28",
   "window_days": 7,
   "messages": [
+    {
+      "id": "2026-11-28-scored-quizzes",
+      "date": "2026-11-28",
+      "title": "Form creator: scored quizzes",
+      "text": "The form-creator plugin can now make scored quizzes: points per question, correct answers for choice questions, and manual grading for open answers. A quiz can show the score right after submit (instant mode, where anyone can find the answers in the page) or keep the answers secret and let the creator share scores later."
+    },
     {
       "id": "2026-11-25-form-short-links",
       "date": "2026-11-25",
