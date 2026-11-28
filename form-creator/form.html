@@ -264,7 +264,8 @@ function showDone(answers){
       (spec.questions||[]).forEach(function(q){
         var e=quiz.key[q.id];if(!e||e.c===undefined)return;
         var v=(answers||{})[q.id],yourA=Array.isArray(v)?v.join(", "):(v||"-");
-        var good=gradeLocal({x:e},answers||{}).score===e.p;
+        var one={};one[q.id]=e;
+        var good=gradeLocal(one,answers||{}).score===e.p;
         list.appendChild(h("p",{style:"margin:0 0 10px;font-size:14px;line-height:1.4"},
           h("strong",{text:(good?"\u2713 ":"\u2717 ")+str(q.text,150)}),h("br"),
           h("span",{text:"Your answer: "+str(yourA,200)+(good?"":" \u00b7 Correct: "+str(Array.isArray(e.c)?e.c.join(", "):e.c,200)),style:good?"color:var(--ok)":"color:var(--err)"})));
