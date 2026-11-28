@@ -9,28 +9,43 @@
 <meta name="theme-color" content="#4f46e5">
 <title>Responses</title>
 <style>
-:root{--ink:#161a2e;--mute:#667085;--line:#e4e7f2;--bg:#f3f4fb;--brand:#4f46e5;--brand2:#7c3aed}
+:root{--ink:#14172b;--mute:#667085;--line:#e6e8f4;--bg:#f2f3fa;--brand:#4f46e5;--brand2:#7c3aed}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-.hero{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;padding:18px 16px 60px}
-.wrap{max-width:720px;margin:0 auto}
-.badge{font-size:12px;opacity:.9;margin-bottom:12px}
-h1{margin:0 0 4px;font-size:26px;overflow-wrap:anywhere}
-main{max-width:720px;margin:-40px auto 0;padding:0 14px 40px}
-.card{background:#fff;border-radius:18px;padding:18px;margin:0 0 14px;box-shadow:0 1px 2px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
-.tabs{display:flex;gap:8px;margin:0 0 14px}
-.tab{flex:1;border:0;border-radius:12px;padding:12px;font:600 15px inherit;background:#fff;color:var(--ink);cursor:pointer}
-.tab.on{background:var(--brand);color:#fff}
-.q{font-weight:650;margin:0 0 8px;overflow-wrap:anywhere}
-.bar{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:14px}
-.bar i{display:block;height:10px;border-radius:6px;background:linear-gradient(90deg,var(--brand),var(--brand2));min-width:3px}
-.bar .l{flex:0 0 38%;overflow-wrap:anywhere}.bar .t{flex:1}.bar .n{flex:none;color:var(--mute);width:28px;text-align:right}
-.ans{background:#f7f8ff;border-radius:10px;padding:8px 10px;margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
-.meta{color:var(--mute);font-size:13px;margin:0 0 8px}
-.k{color:var(--mute);font-size:13px;margin:10px 0 2px}
-button.act{border:0;border-radius:12px;padding:12px 16px;font:600 15px inherit;background:#eef0f8;cursor:pointer}
-.empty{text-align:center;color:var(--mute);padding:26px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.hero{background:linear-gradient(150deg,#4338ca,var(--brand) 45%,var(--brand2));color:#fff;padding:20px 16px 64px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(620px 220px at 88% -60px,rgba(255,255,255,.22),transparent 62%);pointer-events:none}
+.wrap{max-width:720px;margin:0 auto;position:relative;z-index:1}
+.badge{font-size:12px;letter-spacing:.03em;opacity:.85;margin-bottom:12px}
+h1{margin:0 0 10px;font-size:28px;font-weight:750;letter-spacing:-.01em;overflow-wrap:anywhere}
+#count{display:inline-block;background:rgba(255,255,255,.18);border-radius:999px;padding:4px 12px;font-size:13px;margin:0}
+main{max-width:720px;margin:-40px auto 0;padding:0 14px 44px;position:relative;z-index:1}
+.card{background:#fff;border-radius:20px;padding:20px;margin:0 0 14px;box-shadow:0 1px 2px rgba(16,24,40,.05),0 10px 28px rgba(16,24,40,.07);border:1px solid rgba(228,231,242,.8)}
+.tabs{display:flex;gap:4px;background:#e7e9f6;padding:4px;border-radius:14px;margin:0 0 16px}
+.tab{flex:1;border:0;border-radius:11px;padding:10px 8px;font:600 14px inherit;background:transparent;color:var(--mute);cursor:pointer;transition:background .15s,color .15s,box-shadow .15s}
+.tab.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.12)}
+.q{font-weight:650;margin:0 0 4px;overflow-wrap:anywhere;font-size:16px}
+.bar{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px}
+.bar i{display:block;height:10px;border-radius:6px;background:linear-gradient(90deg,var(--brand),var(--brand2));min-width:3px;transition:width .4s ease}
+.bar .l{flex:0 0 38%;overflow-wrap:anywhere}.bar .t{flex:1}.bar .n{flex:none;color:var(--mute);width:28px;text-align:right;font-weight:600}
+.ans{background:#f6f7fe;border:1px solid #eceefb;border-radius:10px;padding:9px 12px;margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+.meta{color:var(--mute);font-size:13px;margin:0 0 10px}
+.k{color:var(--mute);font-size:12.5px;margin:12px 0 3px;font-weight:600;letter-spacing:.02em}
+button.act{border:1.5px solid var(--line);border-radius:12px;padding:12px 18px;font:600 15px inherit;background:#fff;color:var(--ink);cursor:pointer;transition:border-color .15s,color .15s}
+button.act:hover{border-color:var(--brand);color:var(--brand)}
+.empty{text-align:center;color:var(--mute);padding:30px}
 .hide{display:none}
+.rankrow{padding:12px 0;border-bottom:1px solid var(--line)}
+.rankrow:last-child{border-bottom:0}
+.ranktop{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.rankbadge{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-content:center;font:700 13px/1 system-ui;background:#eef0f8;color:var(--mute)}
+.rankbadge.first{background:#fef3c7;color:#92400e}
+.rankbadge.second{background:#e5e7eb;color:#4b5563}
+.rankbadge.third{background:#ffedd5;color:#9a3412}
+.rankname{flex:1;font-weight:600;font-size:14.5px;overflow-wrap:anywhere}
+.scoreval{flex:none;font-weight:700;font-size:14px;color:var(--brand)}
+.scorebar{height:8px;border-radius:6px;background:#eef0f8;overflow:hidden;margin:0 0 4px 38px}
+.scorebar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--brand),var(--brand2))}
+.pend{color:var(--mute);font-size:12px;margin-left:38px}
 </style>
 </head>
 <body>
@@ -107,9 +122,10 @@ function draw(){
       vals.forEach(function(v){(Array.isArray(v)?v:[v]).forEach(function(x){x=String(x);if(!(x in cnt)){cnt[x]=0;order.push(x)}cnt[x]++})});
       if(!q.options)order.sort();
       var mx=Math.max.apply(null,order.map(function(k){return cnt[k]}).concat([1]));
-      order.forEach(function(k){var i=h("i");i.style.width=(cnt[k]/mx*100)+"%";card.appendChild(h("div",{"class":"bar"},h("span",{"class":"l"},k),h("span",{"class":"t"},i),h("span",{"class":"n"},String(cnt[k]))))});
+      order.forEach(function(k){var i=h("i");i.style.width="0%";card.appendChild(h("div",{"class":"bar"},h("span",{"class":"l"},k),h("span",{"class":"t"},i),h("span",{"class":"n"},String(cnt[k]))));setTimeout(function(){i.style.width=(cnt[k]/mx*100)+"%"},30)});
     }else{
       if(!vals.length)card.appendChild(h("p",{"class":"meta"},"No answers."));
+      else card.appendChild(h("p",{"class":"meta"},vals.length+" answer"+(vals.length===1?"":"s")+" below."));
       vals.forEach(function(v){card.appendChild(h("div",{"class":"ans"},fmt(v)))});
     }
     v1.appendChild(card);
@@ -126,7 +142,15 @@ function draw(){
     var sc=rows.map(function(r,i){return{i:i,r:r,g:gradeLocal(quizKey,r.a)}}).sort(function(a,b){return b.g.score-a.g.score});
     var card3=h("div",{"class":"card"},h("p",{"class":"q"},"Ranking (auto-graded)"));
     sc.forEach(function(x,rank){
-      card3.appendChild(h("p",{"class":"meta"},(rank+1)+". "+x.g.score+"/"+x.g.max+" \u00b7 response #"+(x.i+1)+" \u00b7 "+new Date(x.r.time).toLocaleString()+(x.g.pending.length?" \u00b7 "+x.g.pending.length+" open question(s) still to grade":"")));
+      var bc=rank===0?"first":rank===1?"second":rank===2?"third":"";
+      var frac=x.g.max?Math.min(1,x.g.score/x.g.max):0;
+      card3.appendChild(h("div",{"class":"rankrow"},
+        h("div",{"class":"ranktop"},
+          h("span",{"class":"rankbadge "+bc},String(rank+1)),
+          h("span",{"class":"rankname"},"Response #"+(x.i+1)),
+          h("span",{"class":"scoreval"},x.g.score+"/"+x.g.max)),
+        h("div",{"class":"scorebar"},h("i",{style:"width:"+(frac*100)+"%"})),
+        h("div",{"class":"pend"},new Date(x.r.time).toLocaleString()+(x.g.pending.length?" \u00b7 "+x.g.pending.length+" open question(s) still to grade":""))));
     });
     card3.appendChild(h("p",{"class":"meta"},"Manual points for open questions are added by the assistant and are not shown here."));
     v3.appendChild(card3);
