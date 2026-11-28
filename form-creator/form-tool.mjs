@@ -162,7 +162,15 @@ async function cmdCreate(specFile) {
   }
   let viewUrl = `${base}/view.html#t=${topic}&k=${b64u(Buffer.from(JSON.stringify(jwk)))}&d=${d}`;
   if (key) viewUrl += `&qk=${pack(key)}`;
-  console.log(JSON.stringify({ shareUrl: shortAnswerUrl || answerUrl, shortAnswerUrl, answerUrl, viewUrl, secretFile: out, answerUrlLength: answerUrl.length, quiz: key ? { scoredQuestions: Object.keys(key).length, instant: !!spec.instant } : undefined, note: "Hand out ONLY shareUrl (the short is.gd link). The long answerUrl is an internal fallback: use it only when shortening failed, and never show it otherwise. Keep the secret file private (never in a repo): for a quiz it holds the answer key. The view link contains the private key (and the quiz key): share it only with the form owner." }, null, 2));
+  // The view link stays long by default: it holds the private key. Only --short-view (the creator's
+  // explicit choice) shortens it, which hands the key and the inbox address to the shortener.
+  let shortViewUrl = null;
+  if (process.argv.includes("--short-view")) {
+    shortViewUrl = (await shorten(viewUrl)) || (await shorten(viewUrl));
+    if (shortViewUrl) console.error("WARNING: the short view link hands the private key and the response inbox address to is.gd, which can then read every answer. Use only because the creator explicitly chose it.");
+    else console.error("Warning: view link shortening failed; send the long viewUrl instead.");
+  }
+  console.log(JSON.stringify({ shareUrl: shortAnswerUrl || answerUrl, shortAnswerUrl, answerUrl, viewUrl, shortViewUrl, secretFile: out, answerUrlLength: answerUrl.length, quiz: key ? { scoredQuestions: Object.keys(key).length, instant: !!spec.instant } : undefined, note: "Hand out ONLY shareUrl (the short is.gd link). The long answerUrl is an internal fallback: use it only when shortening failed, and never show it otherwise. Keep the secret file private (never in a repo): for a quiz it holds the answer key. The view link contains the private key (and the quiz key): send it to the form owner, long by default; send shortViewUrl only when the creator explicitly chose a short view link." }, null, 2));
   if (key && spec.instant) console.error("Instant feedback: the answer key is inside the link. Anyone who opens the page source can read the answers.");
   if (answerUrl.length > 3000) console.error("Warning: the answer link is long (" + answerUrl.length + " chars). Shorten texts or options so the WhatsApp button keeps working.");
 }
@@ -286,7 +294,7 @@ async function cmdSummary(secretFile) {
 
 const [cmd, a1, a2] = process.argv.slice(2);
 const HELP = `form-tool.mjs
-  create <spec.json> [--base URL] [--secret-out FILE] [--no-short]   make a form: prints shareUrl (the short link to hand out), the long answerUrl (internal fallback only), viewUrl, writes a private secret file
+  create <spec.json> [--base URL] [--secret-out FILE] [--no-short] [--short-view]   make a form: prints shareUrl (the short link to hand out), the long answerUrl (internal fallback only), viewUrl (owner-only; --short-view also prints a less secure shortViewUrl), writes a private secret file
   decode <answerUrl>                                     print the form (questions) from a link
   prefill <answerUrl> <answers.json> [--no-short]               short link with answers prefilled; the visitor presses Submit (--no-short keeps answers away from the shortener)
   submit <answerUrl> <answers.json>                      send answers directly (ONLY after the visitor approved them)
