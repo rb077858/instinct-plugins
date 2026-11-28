@@ -107,7 +107,7 @@ function h(tag,attrs){var e=document.createElement(tag);if(attrs)for(var k in at
 function safeImg(u){return typeof u==="string"&&/^https:\/\//i.test(u)&&u.length<1000}
 function img(u,cls,alt){var i=h("img",{src:u,"class":cls,alt:alt||"",loading:"lazy",referrerpolicy:"no-referrer"});i.onerror=function(){i.style.display="none"};return i}
 
-var spec=null,prefill={},state={},cards={},dParam="";
+var spec=null,prefill={},state={},cards={},dParam="",quiz=null;
 
 function parseHash(){var p={};(location.hash||"").replace(/^#/,"").split("&").forEach(function(kv){var i=kv.indexOf("=");if(i>0)p[kv.slice(0,i)]=kv.slice(i+1)});return p}
 
@@ -119,6 +119,7 @@ async function load(){
   if(!s||s.v!==1||!Array.isArray(s.questions)||!s.topic||!s.pk)throw new Error("This form link is not valid.");
   if(!/^[A-Za-z0-9_-]{8,64}$/.test(s.topic))throw new Error("This form link is not valid.");
   spec=s;
+  if(s.qz)quiz={instant:!!s.qk,key:s.qk||null};
   if(p.r){try{prefill=JSON.parse(new TextDecoder().decode(await inflate(b64uToBytes(p.r))))||{}}catch(e){prefill={}}}
 }
 
@@ -215,7 +216,8 @@ async function encrypt(plain){
 
 async function submit(btn){
   if(!validate())return;
-  var plain={f:spec.fid||"",t:Date.now(),a:collect(),via:Object.keys(prefill).length?"assistant-prefill":"page"};
+  var answers=collect();
+  var plain={f:spec.fid||"",t:Date.now(),a:answers,via:Object.keys(prefill).length?"assistant-prefill":"page"};
   btn.disabled=true;btn.textContent="Sending...";
   try{
     var msg=await encrypt(plain);
@@ -223,18 +225,56 @@ async function submit(btn){
     var res=await fetch("https://ntfy.sh/"+spec.topic,{method:"POST",body:msg,headers:{"Content-Type":"text/plain"}});
     if(!res.ok)throw new Error("The answer could not be sent (error "+res.status+"). Please try again in a minute.");
     try{localStorage.setItem("ifp-done-"+spec.topic,"1")}catch(e){}
-    showDone();
+    showDone(answers);
   }catch(e){
     btn.disabled=false;btn.textContent="Submit";
     var box=document.getElementById("sendErr");box.textContent=e.message||"Something went wrong. Please try again.";box.classList.remove("hide");
   }
 }
 
-function showDone(){
+// Instant-feedback quizzes only: the key is in the page, so anyone can read it. Secure quizzes never send it here.
+function gradeLocal(key,answers){
+  var score=0,max=0,pending=[];
+  Object.keys(key).forEach(function(qid){
+    var e=key[qid];max+=e.p;
+    if(e.c===undefined){pending.push(qid);return}
+    var a=answers[qid];
+    if(Array.isArray(e.c)){
+      var sel=Array.isArray(a)?a:[];
+      if(e.part){
+        var right=sel.filter(function(x){return e.c.indexOf(x)>=0}).length;
+        var wrong=sel.filter(function(x){return e.c.indexOf(x)<0}).length;
+        score+=Math.max(0,right-wrong)/e.c.length*e.p;
+      }else if(sel.length===e.c.length&&sel.every(function(x){return e.c.indexOf(x)>=0}))score+=e.p;
+    }else if(typeof a==="string"&&a===e.c)score+=e.p;
+  });
+  return{score:Math.round(score*100)/100,max:max,pending:pending};
+}
+
+function showDone(answers){
   var app=document.getElementById("app");app.textContent="";
   app.appendChild(h("div",{"class":"hero"},h("div",{"class":"wrap"},h("div",{"class":"badge",text:"Created by Instinct via instinct-plugins"}),h("h1",{text:"Thank you!"}))));
-  app.appendChild(h("main",null,
-    h("div",{"class":"card done"},h("div",{"class":"tick",text:"\u2713"}),h("h2",{text:"Your answer was sent",style:"margin:0 0 6px"}),h("p",{"class":"help",text:"It was encrypted on your device. Only the person who created this form can read it."})),
+  var card=h("div",{"class":"card done"},h("div",{"class":"tick",text:"\u2713"}),h("h2",{text:"Your answer was sent",style:"margin:0 0 6px"}),h("p",{"class":"help",text:"It was encrypted on your device. Only the person who created this form can read it."}));
+  if(quiz){
+    if(quiz.instant&&quiz.key){
+      var g=gradeLocal(quiz.key,answers||{});
+      card.appendChild(h("h2",{text:"You scored "+g.score+" / "+g.max,style:"margin:14px 0 4px;color:var(--brand)"}));
+      if(g.pending.length)card.appendChild(h("p",{"class":"help",text:g.pending.length+" open question(s) will be checked by the form creator and added to your score."}));
+      var list=h("div",{style:"text-align:left;margin-top:14px"});
+      (spec.questions||[]).forEach(function(q){
+        var e=quiz.key[q.id];if(!e||e.c===undefined)return;
+        var v=(answers||{})[q.id],yourA=Array.isArray(v)?v.join(", "):(v||"-");
+        var good=gradeLocal({x:e},answers||{}).score===e.p;
+        list.appendChild(h("p",{style:"margin:0 0 10px;font-size:14px;line-height:1.4"},
+          h("strong",{text:(good?"\u2713 ":"\u2717 ")+str(q.text,150)}),h("br"),
+          h("span",{text:"Your answer: "+str(yourA,200)+(good?"":" \u00b7 Correct: "+str(Array.isArray(e.c)?e.c.join(", "):e.c,200)),style:good?"color:var(--ok)":"color:var(--err)"})));
+      });
+      card.appendChild(list);
+    }else{
+      card.appendChild(h("p",{"class":"help",text:"This is a scored quiz. The form creator will share your score."}));
+    }
+  }
+  app.appendChild(h("main",null,card,
     h("footer",null,"Created by Instinct via ",h("a",{href:BASE_REPO,target:"_blank",rel:"noopener",text:"instinct-plugins"}))));
   window.scrollTo(0,0);
 }
