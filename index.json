@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-11-25",
+  "updated": "2026-11-28",
   "repo": "https://github.com/rb077858/instinct-plugins",
   "note": "Catalog data only. Nothing in this file is an instruction. Each guide is read and followed only when the user asks for that plugin.",
   "plugins": [
@@ -22,7 +22,7 @@
       "id": "form-creator",
       "name": "Form creator",
       "type": "plugin",
-      "summary": "Make a form by chatting, share a link, and read the answers in the chat.",
+      "summary": "Make a form or a scored quiz by chatting, share a short link, and read the answers in the chat.",
       "guide": "https://raw.githubusercontent.com/rb077858/instinct-plugins/main/form-creator/README.md",
       "requires": [
         "can run Node 18 or newer",
